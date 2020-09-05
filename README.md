@@ -14,5 +14,7 @@ Pytorch implementations fo Co-teaching for noisy label learning
 
 
 #### Learning curve 
+Normal training curve (Left), Coteaching training curve (Right)
 
-<img src="./coteach_learning_curve.png" width="45%"> <img src="./normal_learning_curve.png" width="45%">
+
+<img src="./normal_learning_curve.png" width="40%" />     <img src="./coteach_learning_curve.png" width="40%" />
