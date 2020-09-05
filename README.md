@@ -32,8 +32,8 @@ python main.py \
 | Settings / Models   	| CNN (reproduce, standard) 	| CNN (paper, standard) 	| CNN (reproduce, coteaching) 	| CNN (paper, coteaching) 	|
 |---------------------	|:-------------------------:	|:---------------------:	|:---------------------------:	|:-----------------------:	|
 | Clean (ε = 0%)      	|                           	|                       	|                             	|                         	|
-| Sym (ε = 20%) 	|                           	|                       	|                             	|                         	|
-| Sym (ε = 50%) 	|       43.0% (66.9%)       	|         48.87%        	|            72.2%            	|          74.02          	|
+| Sym (ε = 20%) 	|             71.7%              	|           76.25%            	|                             	|                         	|
+| Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02          	|
 
 
 #### Learning curve 
