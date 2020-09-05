@@ -7,6 +7,11 @@ Coteaching (Co-teaching: Robust Training of Deep Neural Networks with Extremely 
 Paper: https://arxiv.org/abs/1804.06872
 
 ### Usage
+0. Install requirements.txt
+~~~
+pip install -r requirements.txt
+~~~
+
 1. Preprocessing (build noisy data)
 ~~~
 python main.py \
@@ -34,9 +39,8 @@ python main.py \
 #### Performance results
 | Settings / Models   	| CNN (reproduce, standard) 	| CNN (paper, standard) 	| CNN (reproduce, coteaching) 	| CNN (paper, coteaching) 	|
 |---------------------	|:-------------------------:	|:---------------------:	|:---------------------------:	|:-----------------------:	|
-| Clean (ε = 0%)      	|                           	|                       	|                             	|                         	|
-| Sym (ε = 20%) 	|             71.7%              	|           76.25%            	|                             	|                         	|
-| Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02          	|
+| Sym (ε = 20%) 	|             71.7%              	|           76.25%            	|          81.5%                   	|       82.3%                  	|
+| Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02%          	|
 
 
 #### Learning curve 
