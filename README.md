@@ -43,7 +43,7 @@ python main.py \
 | Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02%          	|
 
 
-#### Learning curve 
+#### Learning curve (ε = 50%)
 Normal training curve (Left), Coteaching training curve (Right)
 
 
