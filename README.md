@@ -1,4 +1,7 @@
 # pytorch-coteaching
+<p align='center'>
+    <img src="./coteaching_idea.png" width="40%" />
+</p>
 Coteaching (Co-teaching: Robust Training of Deep Neural Networks with Extremely Noisy Labels) is a robust training framework on extremly label noise settings. The key idea in Coteaching is to maintain two networks simultaneously, and cross-trains on instances screened by the “small loss” criteria.
 
 Paper: https://arxiv.org/abs/1804.06872
