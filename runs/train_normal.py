@@ -1,4 +1,3 @@
-""" Noisy-NLP model training/evaluating codes """
 import os
 import pickle
 import numpy as np
@@ -13,6 +12,7 @@ from absl import logging
 from models.modeling import CNN
 from tensorboardX import SummaryWriter
 from utils import EarlyStopping
+from matplotlib import pyplot as plt
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -69,7 +69,7 @@ def valid_step(data_loader, gpu: bool, model):
 
     for x, y, y_hat in data_loader:
         x, y, y_hat = x.to(device), y.to(device), y_hat.to(device)
-        
+
         logits = model(x)
         acc = torch.eq(torch.argmax(logits, 1), y)
         acc = acc.cpu().numpy()
@@ -80,15 +80,15 @@ def valid_step(data_loader, gpu: bool, model):
 
 
 def train(FLAGS):
-
     # load dataset (train)
-    train, valid, test = pickle.load(open(os.path.join(FLAGS.datapath, FLAGS.dataset + '.pkl'), 'rb'))
+    train, valid, test = pickle.load(
+        open(os.path.join(FLAGS.datapath, FLAGS.dataset + '_{}_{}.pkl'.format(FLAGS.noise_prob, FLAGS.noise_type)),
+             'rb'))
     train_data_loader = torch.utils.data.DataLoader(train, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
     valid_data_loader = torch.utils.data.DataLoader(valid, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
     test_data_loader = torch.utils.data.DataLoader(test, batch_size=FLAGS.batch_size, shuffle=False, num_workers=2)
     logging.info('{} dataloader successfully loaded'.format(FLAGS.dataset))
 
-    torch.manual_seed(FLAGS.seed)
     model = CNN(num_class=FLAGS.num_class, dropout_rate=FLAGS.drop_rate)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -103,14 +103,14 @@ def train(FLAGS):
 
     early_stopping = EarlyStopping(patience=FLAGS.stop_patience, verbose=False)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adadelta(model.parameters(), lr=FLAGS.lr)
+    optimizer = optim.Adam(model.parameters(), lr=FLAGS.lr)
     for e in range(FLAGS.epochs):
         # training step
         train_accuracy, avg_loss, model = train_step(data_loader=train_data_loader,
-                                                          gpu=FLAGS.gpu,
-                                                          model=model,
-                                                          optimizer=optimizer,
-                                                          criterion=criterion)
+                                                     gpu=FLAGS.gpu,
+                                                     model=model,
+                                                     optimizer=optimizer,
+                                                     criterion=criterion)
 
         # testing/valid step
         test_accuracy = test_step(data_loader=test_data_loader,
@@ -124,15 +124,26 @@ def train(FLAGS):
         train_acc_list.append(train_accuracy)
         test_acc_list.append(test_accuracy)
 
-        logging.info('{} epoch, Train Loss {}, Train accuracy {}, Dev accuracy {}, Test accuracy {}'.format(e,
+        logging.info('{} epoch, Train Loss {}, Train accuracy {}, Dev accuracy {}, Test accuracy {}'.format(e + 1,
                                                                                                             avg_loss,
                                                                                                             train_accuracy,
                                                                                                             dev_accuracy,
                                                                                                             test_accuracy))
-        early_stopping(-dev_accuracy, model, test_acc=test_accuracy)
-        if early_stopping.early_stop:
-            logging.info('Training stopped! Best accuracy = {}'.format(max(early_stopping.acc_list)))
-            break
+        # early_stopping(-dev_accuracy, model, test_acc=test_accuracy)
+        # if early_stopping.early_stop:
+        #     logging.info('Training stopped! Best accuracy = {}'.format(max(early_stopping.acc_list)))
+        #     break
 
+    # learning curve plot
+    xrange = [(i + 1) for i in range(FLAGS.epochs)]
+    plt.plot(xrange, train_acc_list, 'b', label='training accuracy')
+    plt.plot(xrange, test_acc_list, 'r', label='test accuracy')
+    plt.legend()
+    plt.title('Learning curve')
+    plt.savefig('l_curve.png')
+
+    if not os.path.exists(FLAGS.save_dir):
+        os.mkdir(FLAGS.save_dir)
     torch.save(model.state_dict(),  # save model object before nn.DataParallel
-               os.path.join(FLAGS.save_dir, 'model_{}.pt'.format(FLAGS.dataset)))
+               os.path.join(FLAGS.save_dir,
+                            '{}_{}_{}_{}.pt'.format(FLAGS.dataset, FLAGS.model, FLAGS.noise_prob, FLAGS.noise_type)))

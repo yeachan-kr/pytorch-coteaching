@@ -16,11 +16,7 @@ def load_dataset(dataset: str = 'MNIST', datapath: str = './data/'):
 
     if dataset.__eq__('CIFAR10'):
         trainset = torchvision.datasets.CIFAR10(root=datapath, train=True, download=True, transform=transform)
-        # trainloader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
-
-        testset = torchvision.datasets.CIFAR10(root=datapath, train=False,
-                                               download=True, transform=transform)
-        # testloader = torch.utils.data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+        testset = torchvision.datasets.CIFAR10(root=datapath, train=False, download=True, transform=transform)
     return trainset, testset
 
 
@@ -58,4 +54,4 @@ def preprocess(FLAGS):
     train = corrupt_dataset(noise_matrix=noise_matrix, data=train)
     train, valid = split_train_valid(data=train,valid_ratio=FLAGS.valid_ratio)
 
-    pickle.dump([train, valid, test], open(os.path.join(FLAGS.datapath, FLAGS.dataset + '.pkl'), 'wb'))
+    pickle.dump([train, valid, test], open(os.path.join(FLAGS.datapath, FLAGS.dataset + '_{}_{}.pkl'.format(FLAGS.noise_prob, FLAGS.noise_type)), 'wb'))

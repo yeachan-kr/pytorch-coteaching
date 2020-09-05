@@ -1,4 +1,4 @@
-""" Noisy-NLP model training/evaluating codes """
+
 import os
 import pickle
 import numpy as np
@@ -13,13 +13,14 @@ from absl import logging
 from models.modeling import CNN
 from tensorboardX import SummaryWriter
 from utils import EarlyStopping
+from matplotlib import pyplot as plt
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def co_teaching_loss(model1_loss, model2_loss):
-    _, model1_sm_idx = torch.topk(model1_loss, k=int(int(model1_loss.size(0)) * global_reduce_step), largest=False)
-    _, model2_sm_idx = torch.topk(model2_loss, k=int(int(model2_loss.size(0)) * global_reduce_step), largest=False)
+def co_teaching_loss(model1_loss, model2_loss, rt):
+    _, model1_sm_idx = torch.topk(model1_loss, k=int(int(model1_loss.size(0)) * rt), largest=False)
+    _, model2_sm_idx = torch.topk(model2_loss, k=int(int(model2_loss.size(0)) * rt), largest=False)
 
     # co-teaching
     model1_loss_filter = torch.zeros((model1_loss.size(0))).cuda()
@@ -33,8 +34,7 @@ def co_teaching_loss(model1_loss, model2_loss):
     return model1_loss, model2_loss
 
 
-def train_step(data_loader, gpu: bool, model_list: list, optimizer, criterion):
-    global global_iter, global_reduce_step
+def train_step(data_loader, gpu: bool, model_list: list, optimizer, criterion, rt):
     global_step = 0
     avg_accuracy = 0.
     avg_loss = 0.
@@ -51,7 +51,7 @@ def train_step(data_loader, gpu: bool, model_list: list, optimizer, criterion):
 
         model1_loss = criterion(out1, y_hat)
         model2_loss = criterion(out2, y_hat)
-        model1_loss, model2_loss = co_teaching_loss(model1_loss=model1_loss, model2_loss=model2_loss)
+        model1_loss, model2_loss = co_teaching_loss(model1_loss=model1_loss, model2_loss=model2_loss, rt=rt)
 
         # loss exchange
         optimizer.zero_grad()
@@ -70,11 +70,7 @@ def train_step(data_loader, gpu: bool, model_list: list, optimizer, criterion):
         acc = torch.eq(torch.argmax(out1, 1), y).float()
         avg_accuracy += acc.mean()
         global_step += 1
-    global_iter += 1
 
-    tau = 0.75
-    global_reduce_step = 1.0 - tau * min(global_iter / 15, 1.0)
-    print('global R(T) = {}'.format(global_reduce_step))
     return avg_accuracy / global_step, avg_loss / global_step, [model1, model2]
 
 
@@ -112,16 +108,19 @@ def valid_step(data_loader, gpu: bool, model):
     return avg_accuracy / global_step
 
 
+def update_reduce_step(cur_step, num_gradual, tau=0.5):
+    return 1.0 - tau * min(cur_step / num_gradual, 1)
+
+
 def train(FLAGS):
 
     # load dataset (train)
-    train, valid, test = pickle.load(open(os.path.join(FLAGS.datapath, FLAGS.dataset + '.pkl'), 'rb'))
-    train_data_loader = torch.utils.data.DataLoader(train, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
-    valid_data_loader = torch.utils.data.DataLoader(valid, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
-    test_data_loader = torch.utils.data.DataLoader(test, batch_size=FLAGS.batch_size, shuffle=False, num_workers=2)
+    train, valid, test = pickle.load(open(os.path.join(FLAGS.datapath, FLAGS.dataset + '_{}_{}.pkl'.format(FLAGS.noise_prob, FLAGS.noise_type)), 'rb'))
+    train_data_loader = torch.utils.data.DataLoader(train, batch_size=FLAGS.batch_size, shuffle=True, num_workers=4)
+    valid_data_loader = torch.utils.data.DataLoader(valid, batch_size=FLAGS.batch_size, shuffle=True, num_workers=4)
+    test_data_loader = torch.utils.data.DataLoader(test, batch_size=FLAGS.batch_size, shuffle=False, num_workers=4)
     logging.info('{} dataloader successfully loaded'.format(FLAGS.dataset))
 
-    torch.manual_seed(FLAGS.seed)
     model1 = CNN(num_class=FLAGS.num_class, dropout_rate=FLAGS.drop_rate)
     model2 = CNN(num_class=FLAGS.num_class, dropout_rate=FLAGS.drop_rate)
 
@@ -140,14 +139,19 @@ def train(FLAGS):
 
     early_stopping = EarlyStopping(patience=FLAGS.stop_patience, verbose=False)
     criterion = nn.CrossEntropyLoss(reduce=False)
-    optimizer = optim.Adadelta(chain(model1.parameters(), model2.parameters()), lr=FLAGS.lr)
+    optimizer = optim.Adam(chain(model1.parameters(), model2.parameters()), lr=FLAGS.lr)
     for e in range(FLAGS.epochs):
+
+        # update reduce step
+        rt = update_reduce_step(cur_step=e, num_gradual=FLAGS.num_gradual, tau=FLAGS.tau)
+
         # training step
         train_accuracy, avg_loss, model_list = train_step(data_loader=train_data_loader,
                                                           gpu=FLAGS.gpu,
                                                           model_list=[model1, model2],
                                                           optimizer=optimizer,
-                                                          criterion=criterion)
+                                                          criterion=criterion,
+                                                          rt=rt)
         model1, model2 = model_list
 
         # testing/valid step
@@ -162,15 +166,26 @@ def train(FLAGS):
         train_acc_list.append(train_accuracy)
         test_acc_list.append(test_accuracy)
 
-        logging.info('{} epoch, Train Loss {}, Train accuracy {}, Dev accuracy {}, Test accuracy {}'.format(e,
+        logging.info('{} epoch, Train Loss {}, Train accuracy {}, Dev accuracy {}, Test accuracy {}'.format(e+1,
                                                                                                             avg_loss,
                                                                                                             train_accuracy,
                                                                                                             dev_accuracy,
                                                                                                             test_accuracy))
-        early_stopping(-dev_accuracy, model1, test_acc=test_accuracy)
-        if early_stopping.early_stop:
-            logging.info('Training stopped! Best accuracy = {}'.format(max(early_stopping.acc_list)))
-            break
 
+        # early_stopping(-dev_accuracy, model1, test_acc=test_accuracy)
+        # if early_stopping.early_stop:
+        #     logging.info('Training stopped! Best accuracy = {}'.format(max(early_stopping.acc_list)))
+        #     break
+
+    # learning curve plot
+    xrange = [(i+1) for i in range(FLAGS.epochs)]
+    plt.plot(xrange, train_acc_list, 'b', label='training accuracy')
+    plt.plot(xrange, test_acc_list, 'r', label='test accuracy')
+    plt.legend()
+    plt.title('Learning curve')
+    plt.savefig('l_curve.png')
+
+    if not os.path.exists(FLAGS.save_dir):
+        os.mkdir(FLAGS.save_dir)
     torch.save(model1.state_dict(),  # save model object before nn.DataParallel
-               os.path.join(FLAGS.save_dir, 'model_{}.pt'.format(FLAGS.dataset)))
+               os.path.join(FLAGS.save_dir, '{}_{}_{}_{}.pt'.format(FLAGS.dataset, FLAGS.model, FLAGS.noise_prob, FLAGS.noise_type)))

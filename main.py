@@ -17,25 +17,26 @@ flags.DEFINE_string('datapath', 'data/', 'the dataset path to be downloaded')
 flags.DEFINE_float('valid_ratio', '0.1', 'validation ratio out of total dataset')
 
 # model parameters
-flags.DEFINE_float('drop_rate', 0.5, 'dropout settings')
+flags.DEFINE_float('drop_rate', 0.25, 'dropout settings')
 
 # training parameters
-flags.DEFINE_integer('epochs', 30, 'the number of epochs for training')
-flags.DEFINE_float('lr', 1.0, 'learning rate')
-flags.DEFINE_integer('batch_size', 256, 'the number of batch for training')
+flags.DEFINE_integer('epochs', 50, 'the number of epochs for training')
+flags.DEFINE_float('lr', 0.001, 'learning rate')
+flags.DEFINE_integer('batch_size', 128, 'the number of batch for training')
 flags.DEFINE_integer('num_class', 10, 'the number of class (category) in training data')
-flags.DEFINE_integer('stop_patience', 10, 'the number of patience for early stopping')
+flags.DEFINE_integer('stop_patience', 3, 'the number of patience for early stopping')
 
 # noisy parameters
-flags.DEFINE_float('noise_prob', 0., '')
-flags.DEFINE_string('noise_type', 'sym', '')
+flags.DEFINE_float('tau', 0.5, 'the estimated noise ratio')
+flags.DEFINE_integer('num_gradual', 15, 'the number of gradual step (T_k = 5, 10, 15), default: 15')
+flags.DEFINE_float('noise_prob', 0.5, 'noise probability in training data')
+flags.DEFINE_string('noise_type', 'sym', 'noise type (sym, asym), default: sym')
 
 # misc
-flags.DEFINE_integer('seed', 4234, '')
 flags.DEFINE_bool('gpu', True, '')
-flags.DEFINE_string('run_mode', 'preprocess', 'preprocess/train/eval')
-flags.DEFINE_string('model', 'normal', 'normal/coteach')
-flags.DEFINE_string('save_dir', 'pretrained/', '')
+flags.DEFINE_string('run_mode', 'train', 'current mode (train, preprocess, eval)')
+flags.DEFINE_string('model', 'normal', 'training model type (coteach, normal), default: cotrach')
+flags.DEFINE_string('save_dir', 'pretrained/', 'the path of directory for trained models')
 
 
 def main(argv):
