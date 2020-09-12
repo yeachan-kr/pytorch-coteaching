@@ -67,7 +67,7 @@ Normal training curve (Left), Coteaching training curve (Right)
 Normal training curve (Left), Coteaching training curve (Right)
 
 
-<img src="./normal_learning_curve.png" width="40%" />     <img src="./coteach_learning_curve.png" width="40%" />
+<img src="./trec_normal.png" width="40%" />     <img src="./trec_coteaching.png" width="40%" />
 
 
 #### Contact
