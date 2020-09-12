@@ -28,6 +28,53 @@ class NoiseModel(nn.Module):
         return out
 
 
+class TextCNN(nn.Module):
+    def __init__(self,  vocab: dict, num_class: int, drop_rate: float, pre_weight: np.ndarray = None):
+        super(TextCNN, self).__init__()
+        self.emb_dim = 300
+        self.num_filters = [100, 100, 100]
+        self.size_filters = [3, 4, 5]
+
+        self.embedding = nn.Embedding(num_embeddings=len(vocab),
+                                      embedding_dim=self.emb_dim,
+                                      padding_idx=vocab['<pad>'])
+
+        if pre_weight is not None:
+            self.embedding.from_pretrained(pre_weight)
+
+        self.conv_layers = nn.ModuleList([nn.Conv2d(in_channels=1, out_channels=n, kernel_size=(k, self.emb_dim))
+                                          for n, k in zip(self.num_filters, self.size_filters)])
+        for conv in self.conv_layers:
+            nn.init.kaiming_normal_(conv.weight.data)
+
+        num_features = sum(self.num_filters)
+        self.drop_out = nn.Dropout(drop_rate)
+        self.fc1 = nn.Linear(num_features, num_features)
+        self.fc2 = nn.Linear(num_features, num_class)
+        # nn.init.kaiming_normal_(self.fc.weight)
+
+    def forward(self, x):
+
+        # 1. Embedding layer
+        out = self.embedding(x).unsqueeze(1)
+
+        # 2. 1-D convolution layer
+        features = []
+        for conv in self.conv_layers:
+            h = conv(out).squeeze()
+            h = F.relu(h)
+            h = F.max_pool1d(input=h, kernel_size=h.size(-1)).squeeze()
+            features.append(h)
+        features = torch.cat(features, dim=-1)
+
+        # 3. two-layered linear layers (with dropout)
+        features = self.fc1(features)
+        features = F.relu(features)
+        features = self.drop_out(features)
+        out = self.fc2(features)
+        return out
+
+
 class CNN(nn.Module):
     def __init__(self, input_channel=3, num_class=10, dropout_rate=0.25, top_bn=False):
         super(CNN, self).__init__()

@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from absl import logging
-from models.modeling import CNN
+from models.modeling import CNN, TextCNN
 from tensorboardX import SummaryWriter
 from utils import EarlyStopping
 from matplotlib import pyplot as plt
@@ -84,12 +84,17 @@ def train(FLAGS):
     train, valid, test = pickle.load(
         open(os.path.join(FLAGS.datapath, FLAGS.dataset + '_{}_{}.pkl'.format(FLAGS.noise_prob, FLAGS.noise_type)),
              'rb'))
-    train_data_loader = torch.utils.data.DataLoader(train, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
-    valid_data_loader = torch.utils.data.DataLoader(valid, batch_size=FLAGS.batch_size, shuffle=True, num_workers=2)
-    test_data_loader = torch.utils.data.DataLoader(test, batch_size=FLAGS.batch_size, shuffle=False, num_workers=2)
+    if FLAGS.dataset.__eq__('TREC'):
+        vocab = pickle.load(open(os.path.join(FLAGS.datapath, FLAGS.dataset + '_emb.pkl'), 'rb'))
+    train_data_loader = torch.utils.data.DataLoader(train, batch_size=FLAGS.batch_size, shuffle=True, num_workers=4)
+    valid_data_loader = torch.utils.data.DataLoader(valid, batch_size=FLAGS.batch_size, shuffle=False, num_workers=4)
+    test_data_loader = torch.utils.data.DataLoader(test, batch_size=FLAGS.batch_size, shuffle=False, num_workers=4)
     logging.info('{} dataloader successfully loaded'.format(FLAGS.dataset))
 
-    model = CNN(num_class=FLAGS.num_class, dropout_rate=FLAGS.drop_rate)
+    if FLAGS.dataset.__eq__('TREC'):
+        model = TextCNN(vocab=vocab.stoi, num_class=FLAGS.num_class, drop_rate=FLAGS.drop_rate, pre_weight=vocab.vectors)
+    else:
+        model = CNN(num_class=FLAGS.num_class, dropout_rate=FLAGS.drop_rate)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if torch.cuda.device_count() > 1:
