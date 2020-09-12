@@ -34,13 +34,33 @@ python main.py \
 
 
 
-### Experiments on CIFAR-10
+### Experiments on CIFAR-10 (Image)
 
 #### Performance results
+* num_gradual = 15
+
 | Settings / Models   	| CNN (reproduce, standard) 	| CNN (paper, standard) 	| CNN (reproduce, coteaching) 	| CNN (paper, coteaching) 	|
 |---------------------	|:-------------------------:	|:---------------------:	|:---------------------------:	|:-----------------------:	|
 | Sym (ε = 20%) 	|             71.7%              	|           76.25%            	|          81.5%                   	|       82.3%                  	|
 | Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02%          	|
+
+
+#### Learning curve (ε = 50%)
+Normal training curve (Left), Coteaching training curve (Right)
+
+
+<img src="./normal_learning_curve.png" width="40%" />     <img src="./coteach_learning_curve.png" width="40%" />
+
+
+### Experiments on TREC (Text)
+
+#### Performance results
+* num_gradual = 5
+
+| Settings / Models   	| TextCNN (reproduce, standard) 	| TextCNN (reproduce, coteaching) 	| 
+|---------------------	|:-------------------------:	|:---------------------:	|
+| Sym (ε = 20%) 	|             80.36%              	|           83.56%          	|   
+| Sym (ε = 50%) 	|       41.9%     	|         73.19%        	|         
 
 
 #### Learning curve (ε = 50%)
