@@ -45,12 +45,6 @@ python main.py \
 | Sym (ε = 50%) 	|       43.0%     	|         48.87%        	|            72.2%            	|          74.02%          	|
 
 
-#### Learning curve (ε = 50%)
-Normal training curve (Left), Coteaching training curve (Right)
-
-
-<img src="./normal_learning_curve.png" width="40%" />     <img src="./coteach_learning_curve.png" width="40%" />
-
 
 ### Experiments on TREC (Text)
 
@@ -63,12 +57,6 @@ Normal training curve (Left), Coteaching training curve (Right)
 | Sym (ε = 50%) 	|       41.9%     	|         73.19%        	|         
 
 
-#### Learning curve (ε = 50%)
-Normal training curve (Left), Coteaching training curve (Right)
 
-
-<img src="./trec_normal.png" width="40%" />     <img src="./trec_coteaching.png" width="40%" />
-
-
-#### Contact
-Yeachan Kim (yeachan.kr@gmail.com)
+### Original code repository
+https://github.com/bhanML/Co-teaching
